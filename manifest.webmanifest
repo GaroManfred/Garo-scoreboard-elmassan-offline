@@ -1,0 +1,10 @@
+{
+  "name": "GARO – Bygg högst!",
+  "short_name": "GARO Score",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f1",
+  "theme_color": "#c92333",
+  "description": "Lokal scoreboard för GARO:s tornbyggartävling."
+}

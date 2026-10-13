@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#c92333">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>GARO – Bygg högst!</title>
+<style>
+:root{--garo:#c92333;--garo-dark:#9f1c28;--ink:#171717;--muted:#737373;--line:#e7e7e7;--bg:#f4f4f1;--card:#fff}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.app{max-width:1000px;margin:0 auto;padding:28px}.brand{display:inline-block;font-size:21px;font-weight:900;letter-spacing:.12em;color:var(--garo);user-select:none;-webkit-user-select:none;touch-action:none}
+h1{font-size:clamp(40px,6vw,72px);line-height:.95;margin:6px 0 10px;letter-spacing:-.045em}.subtitle{font-size:18px;color:var(--muted);margin:0 0 24px}
+.panel{background:var(--card);border-radius:22px;padding:22px;box-shadow:0 8px 24px rgba(0,0,0,.05)}.fields{display:grid;grid-template-columns:1fr 170px 170px;gap:12px;align-items:end}
+label{display:block;margin:0 0 7px 3px;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+input{display:block;width:100%;border:1px solid var(--line);border-radius:14px;background:#fff!important;color:#171717!important;-webkit-text-fill-color:#171717!important;caret-color:#171717;opacity:1;padding:17px 16px;font-size:22px;outline:none;-webkit-appearance:none;appearance:none}
+input::placeholder{color:#8a8a8a!important;-webkit-text-fill-color:#8a8a8a!important;opacity:1}input:focus{border-color:var(--garo);box-shadow:0 0 0 3px rgba(201,35,51,.12)}
+button{width:100%;border:0;border-radius:14px;background:var(--garo);color:#fff;padding:18px 16px;font-size:18px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent}button:active{background:var(--garo-dark)}
+.leaderboard{margin-top:22px}.top3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}.podium{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;min-height:150px}
+.place{color:var(--garo);font-size:15px;font-weight:900;margin-bottom:16px}.name{font-size:24px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score{margin-top:6px;font-size:36px;font-weight:900;letter-spacing:-.035em}.unit{font-size:16px;color:var(--muted);font-weight:800}.empty{color:#aaa;font-weight:650}
+.list{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:20px}.row{display:grid;grid-template-columns:72px 1fr 140px 48px;align-items:center;min-height:76px;padding:0 18px;border-top:1px solid var(--line)}.row:first-child{border-top:0}
+.rank{font-size:20px;font-weight:900;color:var(--muted)}.rowname{font-size:22px;font-weight:800}.rowscore{text-align:right;font-size:25px;font-weight:900}.remove{width:auto;background:transparent;color:#a0a0a0;font-size:27px;padding:8px 10px}
+.noresults{padding:34px;text-align:center;color:#8b8b8b;font-size:18px}.notice{min-height:20px;margin-top:12px;color:var(--garo);font-size:14px;font-weight:700}
+.status{display:flex;align-items:center;gap:8px;margin-top:10px;color:#8b8b8b;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:#9a9a9a;display:inline-block}.dot.online{background:#2e8b57}.dot.offline{background:#c92333}
+footer{margin-top:15px;text-align:center;color:#aaa;font-size:12px}
+@media(max-width:760px){.app{padding:18px}.fields{grid-template-columns:1fr 120px}.buttonwrap{grid-column:1/-1}.top3{grid-template-columns:1fr}.podium{min-height:auto}.row{grid-template-columns:52px 1fr 110px 44px;padding:0 12px}.rowname{font-size:18px}.rowscore{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="brand" class="brand">GARO</div>
+  <h1>BYGG HÖGST!</h1>
+  <p class="subtitle">Hur högt torn kan du bygga?</p>
+  <section class="panel">
+    <div class="fields">
+      <div><label for="name">Namn</label><input id="name" type="text" maxlength="40" placeholder="Skriv namn" autocomplete="off"></div>
+      <div><label for="height">Höjd</label><input id="height" type="text" inputmode="decimal" placeholder="cm" autocomplete="off"></div>
+      <div class="buttonwrap"><button id="addBtn" type="button">Lägg till</button></div>
+    </div>
+    <div id="notice" class="notice"></div>
+    <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">Kontrollerar anslutning…</span></div>
+  </section>
+  <section class="leaderboard"><div id="top3" class="top3"></div><div id="list" class="list"></div></section>
+  <footer>Resultaten sparas lokalt på den här enheten.</footer>
+</div>
+<script>
+(function(){
+var STORAGE_KEY="garo_tower_scoreboard_v3",scores=[];
+function loadScores(){try{var saved=localStorage.getItem(STORAGE_KEY);if(saved){var parsed=JSON.parse(saved);if(Array.isArray(parsed))scores=parsed}}catch(e){}}
+function saveScores(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(scores))}catch(e){}}
+function escapeHtml(v){var d=document.createElement("div");d.textContent=String(v);return d.innerHTML}
+function formatHeight(v){var n=Number(v);return Math.round(n)===n?String(n):n.toFixed(1).replace(".",",")}
+function orderedScores(){return scores.slice().sort(function(a,b){return b.height!==a.height?b.height-a.height:a.createdAt-b.createdAt})}
+function render(){var ordered=orderedScores(),top3=document.getElementById("top3"),list=document.getElementById("list"),labels=["1:A PLATS","2:A PLATS","3:E PLATS"],topHtml="",i,s;
+for(i=0;i<3;i++){s=ordered[i];topHtml+='<div class="podium"><div class="place">'+labels[i]+'</div>';topHtml+=s?'<div class="name">'+escapeHtml(s.name)+'</div><div class="score">'+formatHeight(s.height)+' <span class="unit">cm</span></div>':'<div class="empty">Ingen deltagare ännu</div>';topHtml+='</div>'}
+top3.innerHTML=topHtml;if(!ordered.length){list.innerHTML='<div class="noresults">Lägg till första resultatet ovan.</div>';return}
+var rows="";for(i=0;i<ordered.length;i++){s=ordered[i];rows+='<div class="row"><div class="rank">'+(i+1)+'</div><div class="rowname">'+escapeHtml(s.name)+'</div><div class="rowscore">'+formatHeight(s.height)+' cm</div><button class="remove" type="button" data-id="'+s.id+'" aria-label="Ta bort">×</button></div>'}
+list.innerHTML=rows;var bs=list.querySelectorAll(".remove");for(i=0;i<bs.length;i++){bs[i].addEventListener("click",function(){removeScore(this.getAttribute("data-id"))})}}
+function addScore(){var n=document.getElementById("name"),h=document.getElementById("height"),notice=document.getElementById("notice"),name=n.value.replace(/^\s+|\s+$/g,""),raw=h.value.replace(/^\s+|\s+$/g,"").replace(",","."),height=parseFloat(raw);notice.textContent="";
+if(!name||isNaN(height)||height<0){notice.textContent="Fyll i namn och en giltig höjd.";return}
+scores.push({id:String(Date.now())+"_"+String(Math.random()).slice(2),name:name,height:height,createdAt:Date.now()});render();saveScores();n.value="";h.value="";n.focus()}
+function removeScore(id){scores=scores.filter(function(s){return s.id!==id});render();saveScores()}
+function resetScores(){if(confirm("Vill du verkligen radera alla resultat?")){scores=[];render();saveScores()}}
+function updateConnectionStatus(){var dot=document.getElementById("statusDot"),txt=document.getElementById("statusText");if(navigator.onLine){dot.className="dot online";txt.textContent="Online – offlineversionen är redo efter första laddningen."}else{dot.className="dot offline";txt.textContent="Offline – scoreboarden fungerar ändå."}}
+document.getElementById("addBtn").addEventListener("click",addScore);
+document.getElementById("name").addEventListener("keydown",function(e){if(e.key==="Enter"||e.keyCode===13)addScore()});
+document.getElementById("height").addEventListener("keydown",function(e){if(e.key==="Enter"||e.keyCode===13)addScore()});
+var brand=document.getElementById("brand"),holdTimer=null;function beginHold(e){if(e&&e.preventDefault)e.preventDefault();clearTimeout(holdTimer);holdTimer=setTimeout(resetScores,2000)}function endHold(){clearTimeout(holdTimer)}
+brand.addEventListener("mousedown",beginHold);brand.addEventListener("mouseup",endHold);brand.addEventListener("mouseleave",endHold);brand.addEventListener("touchstart",beginHold,{passive:false});brand.addEventListener("touchend",endHold);brand.addEventListener("touchcancel",endHold);
+window.addEventListener("online",updateConnectionStatus);window.addEventListener("offline",updateConnectionStatus);
+if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("./sw.js").catch(function(){})})}
+loadScores();render();updateConnectionStatus();
+})();
+</script>
+</body>
+</html>
